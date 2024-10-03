@@ -1,0 +1,47 @@
+class CreateRequestInteractor: CreateRequestBusinessLogic, CreateRequestDataStore {
+
+    var pr: CreateRequestPresentationLogic?
+    var worker = CreateRequestWorker()
+    var workerRecurring: RecurringWorker?
+    var scheduleRequest: RequestEntity?
+    var nCSRequest: RequestEntity?
+    var selectedDate: Date?
+    var startDate: Date?
+    var endDate: Date?
+    var isEditMode = false
+    var rTypes: [RequestType]?
+    var shiftTypes: [ShiftType]?
+    var locations: [Site]?
+    var sShTypes: Set<ShiftType> = []
+    var sSections = 0
+    var sTypeReq: Int?
+    var sShiftIndexs: [Int] = []
+    var isMSType = false
+    var isShiftType = false
+    var isSoft = false
+
+    func doInitialViews(request: CreateRequest.InitialViews.Request) {
+        let workerRecurring = RecurringWorker()
+        selectedDate = request.selectedDate
+        isEditMode = request.scheduleRequest != nil
+        scheduleRequest = (request.scheduleRequest?.copy() as? RequestEntity) ?? RequestEntity()
+        let note = isEditMode ? scheduleRequest?.notes ?? RequestStrings.PlaceholderNote : RequestStrings.PlaceholderNote
+        isSoft = scheduleRequest?.isSoft ?? false
+        let isShowSubTitle = !isEditMode
+        let titleText = isEditMode ? scheduleRequest?.type?.name ?? "" : RequestStrings.TitleCreateRequest
+        let titleTopConstaraint: CGFloat = isEditMode ? -4 : 0
+        let iconCenterConstraint: CGFloat = isEditMode ? -10 : 0
+        let topHeaderHeight: CGFloat = isEditMode ? 88 : 64
+        let isSubmitButtonHidden = isEditMode
+        let typeDatePicker = getTypeDatePicker()
+        let titleRecurringType = isEditMode ? workerRecurring.getTitleCustomRecurring(selectedDate ?? startDate ?? Date(), scheduleRequest?.recurringType) : "One-time event"
+        let startDate = scheduleRequest?.dates?.startTime ?? selectedDate ?? Date()
+        var endDate = scheduleRequest?.dates?.endTime ?? selectedDate ?? Date()
+        if let endDateAdjusted = GlobalVariables.currentCalendar.date(byAdding: .second, value: -1, to: endDate), isEditMode {
+            endDate = endDateAdjusted
+        }
+        self.endDate = endDate
+        self.startDate = startDate
+        let response = CreateRequest.InitialViews.Response(scheduleRequest: scheduleRequest ?? RequestEntity(), isEditMode: isEditMode, selectedDate: selectedDate ?? Date(), startDate: startDate, endDate: endDate, note: note, isSoft: isSoft, isShowSubTitle: isShowSubTitle, titleText: titleText, titleTopConstaraint: titleTopConstaraint, iconCenterConstraint: iconCenterConstraint, topHeaderHeight: topHeaderHeight, isSubmitButtonHidden: isSubmitButtonHidden, typeDatePicker: typeDatePicker, titleRecurringType: titleRecurringType)
+        pr?.presentInitialViews(response: response)
+    }
